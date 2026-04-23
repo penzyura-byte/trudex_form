@@ -191,8 +191,8 @@ let selectedSendCity = "";
 let selectedReceiveCity = "";
 let selectedReceiveDetails = "";
 let selectedNetwork = "";
+let lockedRate = null;
 
-const margin = 0.03;
 const fromCurrencies = ["RUB", "USDT", "USD", "KZT", "AED", "VND", "IDR", "CNY"];
 const toCurrencies = ["RUB", "USDT", "THB", "USD", "CNY", "KZT", "AED", "IDR", "VND"];
 
@@ -294,6 +294,7 @@ function formatNumber(num) {
 }
 
 function setMode(m) {
+  if (m !== mode) lockedRate = null;
   mode = m;
   giveBtn.classList.toggle("active", m === "give");
   getBtn.classList.toggle("active", m === "get");
@@ -301,12 +302,12 @@ function setMode(m) {
 }
 
 function getPairFactor(from, to, mode) {
-  const factors = {
-    RUB_USDT: { give: 0.99, get: 1.01 },
-    USDT_THB: { give: 0.90, get: 1 / 0.90 },
-    RUB_THB:  { give: 0.90, get: 1 / 0.90 }
-  };
-  return factors[`${from}_${to}`]?.[mode] ?? 1;
+  // Все пары: -5%
+  // RUB <-> USDT: наоборот +2.5%
+  if ((from === "RUB" && to === "USDT") || (from === "USDT" && to === "RUB")) {
+    return 1.025;
+  }
+  return 0.95;
 }
 
 function renderToOptions() {
@@ -493,16 +494,16 @@ function calc() {
   const to = toEl.value;
   const amount = Number(amountEl.value || 0);
 
-  const pairFactor = getPairFactor(from, to, mode);
+  const pairFactor = lockedRate || getPairFactor(from, to, mode);
 
   if (mode === "give") {
-    const usdt = amount * prices[from] * (1 - margin);
-    const result = (usdt / prices[to]) * pairFactor;
+    const base = amount * prices[from];
+    const result = (base / prices[to]) * pairFactor;
     resultEl.innerText = `К получению: ~${formatNumber(result)} ${to}`;
     subResultEl.innerText = `Вы отдаёте: ${formatNumber(amount)} ${from}`;
   } else {
-    const usdt = amount * prices[to] * (1 + margin);
-    const result = (usdt / prices[from]) * pairFactor;
+    const base = amount * prices[to];
+    const result = (base / prices[from]) * pairFactor;
     resultEl.innerText = `К отправке: ~${formatNumber(result)} ${from}`;
     subResultEl.innerText = `Вы получите: ${formatNumber(amount)} ${to}`;
   }
@@ -645,6 +646,10 @@ function submitOrder() {
     return;
   }
 
+  if (!lockedRate) {
+    lockedRate = getPairFactor(from, to, mode);
+  }
+
   const order = {
     id: Date.now(),
     from,
@@ -659,7 +664,8 @@ function submitOrder() {
     receiveDetails: selectedReceiveDetails,
     network: selectedNetwork,
     resultText: resultEl.innerText,
-    subResultText: subResultEl.innerText
+    subResultText: subResultEl.innerText,
+    lockedRate
   };
 
   saveOrder(order);
@@ -675,6 +681,7 @@ function submitOrder() {
 }
 
 function resetForm() {
+  lockedRate = null;
   appScreen.style.display = "block";
   successScreen.style.display = "none";
   amountEl.value = "";
@@ -702,8 +709,19 @@ function openManagerChat() {
 }
 
 amountEl.oninput = calc;
-fromEl.onchange = () => { renderToOptions(); renderSendRUBBlock(); renderReceiveBlock(); calc(); };
-toEl.onchange = () => { renderSendRUBBlock(); renderReceiveBlock(); calc(); };
+fromEl.onchange = () => {
+  lockedRate = null;
+  renderToOptions();
+  renderSendRUBBlock();
+  renderReceiveBlock();
+  calc();
+};
+toEl.onchange = () => {
+  lockedRate = null;
+  renderSendRUBBlock();
+  renderReceiveBlock();
+  calc();
+};
 
 renderSendRUBBlock();
 renderReceiveBlock();
