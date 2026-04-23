@@ -110,6 +110,7 @@ select, input {
   margin-bottom: 8px;
 }
 .success-btn.secondary { background: #145c55; color: white; }
+
 .invalid {
   outline: 2px solid #ff4d4f !important;
   outline-offset: 2px;
@@ -159,9 +160,15 @@ select, input {
   <div class="card">
     <div id="result" class="result">—</div>
     <div id="subResult" class="sub-result"></div>
+    <div class="note">
+      *Это предварительный расчёт. Финальную сумму подтвердит менеджер.
+    </div>
   </div>
 
   <button type="button" class="submit-btn" onclick="submitOrder()">Отправить заявку в чат</button>
+  <div class="note" style="text-align:center; margin-top:8px;">
+    При нажатии вы перейдёте в чат с менеджером, куда нужно будет отправить заявку
+  </div>
 </div>
 
 <div id="successScreen" class="success-screen">
@@ -465,6 +472,9 @@ function renderReceiveBlock() {
     receiveExtra.innerHTML = `
       <input id="receiveDetailsInput" class="compact-input" placeholder="Адрес (Google Maps желательно)">
       <div class="note">Можно вставить ссылку на Google Maps</div>
+      <div class="note" style="margin-top:6px;">
+        Курьерская доставка стоит примерно ~30$
+      </div>
     `;
     const ta = document.getElementById("receiveDetailsInput");
     ta.value = selectedReceiveDetails;
