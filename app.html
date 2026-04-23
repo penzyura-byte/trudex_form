@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trud Exchange</title>
+<style>
+html { height: 100%; background: #052e2b; }
+body {
+  margin: 0;
+  background: #052e2b;
+  color: white;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-text-size-adjust: 100%;
+}
+* { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+.container { padding: 15px; max-width: 420px; margin: auto; min-height: 100vh; }
+.title { font-size: 20px; margin-bottom: 15px; font-weight: bold; }
+.label { font-size: 13px; color: #a7d4cf; margin-bottom: 6px; }
+.card { background: #0b3d3a; padding: 14px; border-radius: 14px; margin-bottom: 12px; }
+.row { display: flex; gap: 8px; }
+select, input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #145c55;
+  color: white;
+  font-size: 16px;
+}
+.fast, .option-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.fast button, .option-buttons button {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: #145c55;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  flex: 1;
+}
+.option-buttons button.active { background: #22c55e; color: black; }
+.amount-row { display: flex; gap: 6px; align-items: center; }
+.switch-inline { display: flex; gap: 4px; flex-shrink: 0; }
+.switch-inline button {
+  min-width: 70px;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  background: #145c55;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+}
+.switch-inline button.active { background: #22c55e; color: black; }
+.result { font-size: 17px; font-weight: bold; margin-bottom: 5px; }
+.sub-result { font-size: 13px; color: #9fded5; line-height: 1.35; }
+.note { font-size: 12px; color: #9fded5; margin-top: 6px; line-height: 1.35; }
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #22c55e;
+  color: black;
+  font-size: 16px;
+  cursor: pointer;
+}
+.city-wrapper { margin-top: 10px; max-width: 220px; }
+.city-dropdown {
+  background: #145c55;
+  border-radius: 10px;
+  margin-top: 6px;
+  overflow: hidden;
+  display: none;
+}
+.city-item { padding: 10px; cursor: pointer; font-size: 12px; }
+.city-item:hover { background: #1b6d66; }
+.compact-input {
+  margin-top: 10px;
+  height: 42px;
+  min-height: 42px;
+  resize: none;
+}
+.success-screen {
+  display: none;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 15px;
+  text-align: center;
+  min-height: 100vh;
+}
+.success-icon { font-size: 38px; margin-bottom: 12px; }
+.success-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.success-text { color: #9fded5; font-size: 13px; line-height: 1.4; margin-bottom: 16px; }
+.success-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #22c55e;
+  color: black;
+  font-size: 16px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.success-btn.secondary { background: #145c55; color: white; }
+.invalid {
+  outline: 2px solid #ff4d4f !important;
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="appScreen" class="container">
+  <div class="title">Сбор заявки Trud Exchange</div>
+
+  <div id="historyBlock" style="display:none;">
+    <div class="label">Ваши последние обмены</div>
+    <div id="historyButtons" class="card fast"></div>
+  </div>
+
+  <div class="label">Отдаю / Получаю</div>
+  <div class="card row">
+    <select id="from"></select>
+    <select id="to"></select>
+  </div>
+
+  <div id="sendRUBBlock" class="card" style="display:none;">
+    <div class="label">Как отправляете RUB</div>
+    <div id="sendRUBButtons" class="option-buttons"></div>
+    <div id="sendRUBExtra"></div>
+  </div>
+
+  <div id="receiveType" class="card" style="display:none;">
+    <div class="label">Способ получения</div>
+    <div id="receiveButtons" class="option-buttons"></div>
+    <div id="receiveExtra"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">Введите сумму</div>
+    <div class="amount-row">
+      <input id="amount" type="number" inputmode="decimal">
+      <div class="switch-inline">
+        <button type="button" id="giveBtn" class="active" onclick="setMode('give')">Отдаю</button>
+        <button type="button" id="getBtn" onclick="setMode('get')">Получаю</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="result" class="result">—</div>
+    <div id="subResult" class="sub-result"></div>
+  </div>
+
+  <button type="button" class="submit-btn" onclick="submitOrder()">Отправить заявку в чат</button>
+</div>
+
+<div id="successScreen" class="success-screen">
+  <div class="success-icon">✅</div>
+  <div class="success-title">Заявка успешно подготовлена</div>
+  <div class="success-text">Сейчас откроется чат с менеджером, где уже будет вставлен текст заявки</div>
+
+  <button class="success-btn" onclick="resetForm()">Новая заявка</button>
+  <button class="success-btn secondary" onclick="openManagerChat()">Перейти в чат с менеджером</button>
+</div>
+
+<script>
+const MANAGER_LINK = "https://t.me/UAGA_B";
+
+let mode = "give";
+let selectedReceiveMethod = "";
+let selectedSendRubMethod = "";
+let selectedSendRubTransferType = "";
+let selectedSendCity = "";
+let selectedReceiveCity = "";
+let selectedReceiveDetails = "";
+let selectedNetwork = "";
+
+const margin = 0.03;
+const fromCurrencies = ["RUB", "USDT", "USD", "KZT", "AED", "VND", "IDR", "CNY"];
+const toCurrencies = ["RUB", "USDT", "THB", "USD", "CNY", "KZT", "AED", "IDR", "VND"];
+
+let prices = {
+  USDT: 1, USD: 1, RUB: 0.0121, THB: 0.027, VND: 0.000041, IDR: 0.000065,
+  EUR: 1.08, KZT: 0.0021, AED: 0.272, CNY: 0.139
+};
+
+const citiesByCurrency = {
+  RUB: ["Москва","Санкт-Петербург","Новосибирск","Екатеринбург","Казань","Нижний Новгород","Челябинск","Самара","Омск","Ростов-на-Дону"],
+  USD: ["New York","Los Angeles","Chicago","Houston","Phoenix","Philadelphia","San Antonio","San Diego","Dallas","San Jose"],
+  USDT: ["New York","Los Angeles","Chicago","Houston","Phoenix","Philadelphia","San Antonio","San Diego","Dallas","San Jose"],
+  CNY: ["Shanghai","Beijing","Shenzhen","Guangzhou","Chongqing","Tianjin","Chengdu","Wuhan","Hangzhou","Xi'an"],
+  KZT: ["Almaty","Astana","Shymkent","Karaganda","Aktobe","Pavlodar","Ust-Kamenogorsk","Semey","Taraz","Kostanay"],
+  AED: ["Dubai","Abu Dhabi","Sharjah","Al Ain","Ajman","Ras Al Khaimah","Fujairah","Umm Al Quwain","Khor Fakkan","Dibba Al-Fujairah"]
+};
+
+const fromEl = document.getElementById("from");
+const toEl = document.getElementById("to");
+const amountEl = document.getElementById("amount");
+const resultEl = document.getElementById("result");
+const subResultEl = document.getElementById("subResult");
+
+const appScreen = document.getElementById("appScreen");
+const successScreen = document.getElementById("successScreen");
+const sendRUBBlock = document.getElementById("sendRUBBlock");
+const sendRUBButtons = document.getElementById("sendRUBButtons");
+const sendRUBExtra = document.getElementById("sendRUBExtra");
+const receiveType = document.getElementById("receiveType");
+const receiveButtons = document.getElementById("receiveButtons");
+const receiveExtra = document.getElementById("receiveExtra");
+const historyBlock = document.getElementById("historyBlock");
+const historyButtons = document.getElementById("historyButtons");
+const giveBtn = document.getElementById("giveBtn");
+const getBtn = document.getElementById("getBtn");
+
+function getClientKey() {
+  let key = localStorage.getItem("clientKey");
+  if (key) return key;
+
+  key =
+    (crypto.randomUUID && crypto.randomUUID()) ||
+    (Date.now().toString(36) + Math.random().toString(36).substring(2, 10));
+
+  localStorage.setItem("clientKey", key);
+  return key;
+}
+
+const CLIENT_KEY = getClientKey();
+const HISTORY_KEY = `orders:${CLIENT_KEY}`;
+
+fromEl.innerHTML = fromCurrencies.map(v => `<option value="${v}">${v}</option>`).join("");
+renderToOptions();
+
+let localOrderCounter = Number(localStorage.getItem(`orderCounter:${CLIENT_KEY}`) || "1");
+
+async function fetchBinancePrice(symbol) {
+  const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+  const data = await res.json();
+  if (!data || !data.price) throw new Error("No price");
+  return Number(data.price);
+}
+
+async function loadRates() {
+  try {
+    const liveMap = {
+      RUB: ["RUBUSDT", "USDRUB"],
+      THB: ["THBUSDT", "USDTHB", "USDTTHB"],
+      VND: ["VNDUSDT", "USDVND", "USDTVND"],
+      IDR: ["IDRUSDT", "USDIDR", "USDTIDR"],
+      KZT: ["KZTUSDT", "USDKZT", "USDTKZT"],
+      AED: ["AEDUSDT", "USDAED", "USDTAED"],
+      CNY: ["CNYUSDT", "USDCNY", "USDTCNY"],
+      EUR: ["EURUSDT", "USDEUR", "EURUSD"]
+    };
+
+    for (const currency of Object.keys(liveMap)) {
+      for (const symbol of liveMap[currency]) {
+        try {
+          const price = await fetchBinancePrice(symbol);
+          if (symbol.endsWith("USDT")) prices[currency] = price;
+          else if (symbol.startsWith("USD") || symbol.startsWith("USDT")) prices[currency] = 1 / price;
+          else prices[currency] = price;
+          break;
+        } catch (e) {}
+      }
+    }
+
+    prices.USDT = 1;
+    prices.USD = 1;
+    calc();
+  } catch (e) {}
+}
+
+function formatNumber(num) {
+  const n = Number(num);
+  if (!Number.isFinite(n)) return "0";
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(n);
+}
+
+function setMode(m) {
+  mode = m;
+  giveBtn.classList.toggle("active", m === "give");
+  getBtn.classList.toggle("active", m === "get");
+  calc();
+}
+
+function getPairFactor(from, to, mode) {
+  const factors = {
+    RUB_USDT: { give: 0.99, get: 1.01 },
+    USDT_THB: { give: 0.90, get: 1 / 0.90 },
+    RUB_THB:  { give: 0.90, get: 1 / 0.90 }
+  };
+  return factors[`${from}_${to}`]?.[mode] ?? 1;
+}
+
+function renderToOptions() {
+  const allowed = toCurrencies.filter(c => c !== fromEl.value);
+  const current = toEl.value;
+  toEl.innerHTML = allowed.map(v => `<option value="${v}">${v}</option>`).join("");
+  toEl.value = allowed.includes(current) ? current : allowed[0];
+}
+
+function makeCityPicker(containerId, inputId, listId, placeholder, initialValue, onSelect, cityList) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = `
+    <div class="city-wrapper">
+      <input id="${inputId}" class="compact-input" placeholder="${placeholder}">
+      <div id="${listId}" class="city-dropdown"></div>
+    </div>
+  `;
+
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  if (initialValue) input.value = initialValue;
+
+  function renderCities(filter = "") {
+    const filtered = cityList.filter(c => c.toLowerCase().includes(filter.toLowerCase())).slice(0, 5);
+    list.innerHTML = "";
+    if (!filtered.length) {
+      list.style.display = "none";
+      return;
+    }
+    list.style.display = "block";
+    filtered.forEach(city => {
+      const div = document.createElement("div");
+      div.className = "city-item";
+      div.textContent = city;
+      div.onmousedown = (e) => {
+        e.preventDefault();
+        input.value = city;
+        list.style.display = "none";
+        if (onSelect) onSelect(city);
+      };
+      list.appendChild(div);
+    });
+  }
+
+  input.onfocus = () => renderCities(input.value);
+  input.oninput = () => {
+    if (onSelect) onSelect(input.value);
+    renderCities(input.value);
+  };
+
+  if (input.value) renderCities(input.value);
+  else renderCities();
+}
+
+function getReceiveConfig(currency) {
+  if (currency === "USDT") return { methods: ["Кошелек"], cityList: null };
+  if (["THB", "IDR", "VND"].includes(currency)) {
+    return { methods: ["Перевод", "Банкомат", "Курьер", "Офис"], cityList: null };
+  }
+  return { methods: ["Наличные", "Перевод"], cityList: citiesByCurrency[currency] || citiesByCurrency.USD };
+}
+
+function renderSendRUBBlock() {
+  sendRUBButtons.innerHTML = "";
+  sendRUBExtra.innerHTML = "";
+
+  if (fromEl.value !== "RUB") {
+    sendRUBBlock.style.display = "none";
+    selectedSendRubMethod = "";
+    selectedSendRubTransferType = "";
+    selectedSendCity = "";
+    return;
+  }
+
+  sendRUBBlock.style.display = "block";
+
+  ["Перевод", "Наличные"].forEach(item => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = selectedSendRubMethod === item ? "active" : "";
+    btn.innerHTML = item === "Перевод"
+      ? `<div style="font-weight:700;margin-bottom:3px;">Перевод</div><div style="font-size:11px;opacity:.95;">Быстрая отправка RUB</div>`
+      : `<div style="font-weight:700;margin-bottom:3px;">Наличные</div><div style="font-size:11px;opacity:.95;">Выбор города отправки</div>`;
+    btn.onclick = () => {
+      selectedSendRubMethod = item;
+      selectedSendRubTransferType = "";
+      selectedSendCity = "";
+      renderSendRUBBlock();
+    };
+    sendRUBButtons.appendChild(btn);
+  });
+
+  if (selectedSendRubMethod === "Перевод") {
+    sendRUBExtra.innerHTML = `<div class="note" style="margin-top:10px;">Перевод RUB</div>`;
+  }
+
+  if (selectedSendRubMethod === "Наличные") {
+    makeCityPicker("sendRUBExtra", "sendCityInput", "sendCityList", "Город отправки", selectedSendCity, val => {
+      selectedSendCity = val;
+    }, citiesByCurrency.RUB);
+  }
+}
+
+function renderReceiveBlock() {
+  receiveButtons.innerHTML = "";
+  receiveExtra.innerHTML = "";
+
+  const to = toEl.value;
+  const cfg = getReceiveConfig(to);
+
+  receiveType.style.display = cfg.methods ? "block" : "none";
+  if (!cfg.methods.includes(selectedReceiveMethod)) selectedReceiveMethod = "";
+
+  cfg.methods.forEach(method => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = selectedReceiveMethod === method ? "active" : "";
+    btn.textContent = method;
+    btn.onclick = () => {
+      selectedReceiveMethod = method;
+      selectedReceiveCity = "";
+      selectedReceiveDetails = "";
+      selectedNetwork = "";
+      renderReceiveBlock();
+    };
+    receiveButtons.appendChild(btn);
+  });
+
+  if (to === "USDT" && selectedReceiveMethod === "Кошелек") {
+    receiveExtra.innerHTML = `
+      <input id="walletInput" class="compact-input" placeholder="Кошелек (необязательно)">
+      <div class="note">Поле необязательно</div>
+      <div class="label" style="margin-top:10px;">Сеть</div>
+      <div class="option-buttons" id="networkButtons">
+        <button type="button" data-net="TRC20" class="${selectedNetwork === 'TRC20' ? 'active' : ''}">TRC20</button>
+        <button type="button" data-net="BEP20" class="${selectedNetwork === 'BEP20' ? 'active' : ''}">BEP20</button>
+        <button type="button" data-net="ERC20" class="${selectedNetwork === 'ERC20' ? 'active' : ''}">ERC20</button>
+        <button type="button" data-net="TON" class="${selectedNetwork === 'TON' ? 'active' : ''}">TON</button>
+      </div>
+    `;
+    const wallet = document.getElementById("walletInput");
+    wallet.value = selectedReceiveDetails;
+    wallet.oninput = () => { selectedReceiveDetails = wallet.value; };
+    document.querySelectorAll("#networkButtons button").forEach(btn => {
+      btn.onclick = () => {
+        selectedNetwork = btn.getAttribute("data-net");
+        renderReceiveBlock();
+      };
+    });
+  }
+
+  if (selectedReceiveMethod === "Перевод" && to !== "USDT") {
+    receiveExtra.innerHTML = `
+      <input id="receiveDetailsInput" class="compact-input" placeholder="Реквизиты (необязательно)">
+      <div class="note">Поле необязательно</div>
+    `;
+    const ta = document.getElementById("receiveDetailsInput");
+    ta.value = selectedReceiveDetails;
+    ta.oninput = () => { selectedReceiveDetails = ta.value; };
+  }
+
+  if (selectedReceiveMethod === "Курьер") {
+    receiveExtra.innerHTML = `
+      <input id="receiveDetailsInput" class="compact-input" placeholder="Адрес (Google Maps желательно)">
+      <div class="note">Можно вставить ссылку на Google Maps</div>
+    `;
+    const ta = document.getElementById("receiveDetailsInput");
+    ta.value = selectedReceiveDetails;
+    ta.oninput = () => { selectedReceiveDetails = ta.value; };
+  }
+
+  if (selectedReceiveMethod === "Наличные") {
+    makeCityPicker("receiveExtra", "receiveCityInput", "receiveCityList", "Город получения", selectedReceiveCity, val => {
+      selectedReceiveCity = val;
+    }, cfg.cityList);
+  }
+}
+
+function calc() {
+  const from = fromEl.value;
+  const to = toEl.value;
+  const amount = Number(amountEl.value || 0);
+
+  const pairFactor = getPairFactor(from, to, mode);
+
+  if (mode === "give") {
+    const usdt = amount * prices[from] * (1 - margin);
+    const result = (usdt / prices[to]) * pairFactor;
+    resultEl.innerText = `К получению: ~${formatNumber(result)} ${to}`;
+    subResultEl.innerText = `Вы отдаёте: ${formatNumber(amount)} ${from}`;
+  } else {
+    const usdt = amount * prices[to] * (1 + margin);
+    const result = (usdt / prices[from]) * pairFactor;
+    resultEl.innerText = `К отправке: ~${formatNumber(result)} ${from}`;
+    subResultEl.innerText = `Вы получите: ${formatNumber(amount)} ${to}`;
+  }
+
+  renderSendRUBBlock();
+  renderReceiveBlock();
+}
+
+function saveOrder(order) {
+  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  order.localId = localOrderCounter++;
+  localStorage.setItem(`orderCounter:${CLIENT_KEY}`, String(localOrderCounter));
+  history.unshift(order);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 5)));
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  if (!history.length) {
+    historyBlock.style.display = "none";
+    return;
+  }
+  historyBlock.style.display = "block";
+  historyButtons.innerHTML = "";
+  history.forEach(order => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = `${order.from} → ${order.to}`;
+    btn.onclick = () => loadOrder(order);
+    historyButtons.appendChild(btn);
+  });
+}
+
+function loadOrder(order) {
+  fromEl.value = order.from;
+  renderToOptions();
+  toEl.value = order.to;
+  amountEl.value = order.amount || "";
+  mode = order.mode || "give";
+  giveBtn.classList.toggle("active", mode === "give");
+  getBtn.classList.toggle("active", mode === "get");
+  selectedSendRubMethod = order.sendRubMethod || "";
+  selectedSendRubTransferType = order.sendRubTransferType || "";
+  selectedSendCity = order.sendCity || "";
+  selectedReceiveMethod = order.receiveMethod || "";
+  selectedReceiveCity = order.receiveCity || "";
+  selectedReceiveDetails = order.receiveDetails || "";
+  selectedNetwork = order.network || "";
+  appScreen.style.display = "block";
+  successScreen.style.display = "none";
+  renderSendRUBBlock();
+  renderReceiveBlock();
+  calc();
+}
+
+function clearErrors() {
+  document.querySelectorAll(".invalid").forEach(el => el.classList.remove("invalid"));
+}
+
+function markInvalid(el) {
+  if (!el) return;
+  el.classList.add("invalid");
+}
+
+function focusFirstInvalid() {
+  const first = document.querySelector(".invalid");
+  if (first && typeof first.scrollIntoView === "function") {
+    first.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+function getSummaryText(order) {
+  return [
+    "Заявка на обмен",
+    "",
+    `${order.from} → ${order.to}`,
+    order.mode === "get" ? `Получаю: ${order.amount} ${order.to}` : `Отдаю: ${order.amount} ${order.from}`,
+    order.resultText || "",
+    "Отправка:",
+    `${order.sendRubMethod || "-"} ${order.sendCity || ""}`.trim(),
+    "Получение:",
+    `${order.receiveMethod || "-"} ${order.receiveCity || ""}`.trim(),
+    order.receiveDetails || "",
+    order.network || ""
+  ].join("\n");
+}
+
+function submitOrder() {
+  clearErrors();
+
+  const from = fromEl.value;
+  const to = toEl.value;
+  const amount = Number(amountEl.value);
+
+  let hasError = false;
+
+  if (!amount || amount <= 0) {
+    markInvalid(amountEl);
+    hasError = true;
+  }
+
+  if (from === to) {
+    markInvalid(fromEl);
+    markInvalid(toEl);
+    hasError = true;
+  }
+
+  if (from === "RUB") {
+    if (!selectedSendRubMethod) {
+      markInvalid(sendRUBBlock);
+      hasError = true;
+    }
+    if (selectedSendRubMethod === "Наличные" && !selectedSendCity) {
+      const el = document.getElementById("sendCityInput");
+      markInvalid(el);
+      hasError = true;
+    }
+  }
+
+  if (!selectedReceiveMethod) {
+    markInvalid(receiveType);
+    hasError = true;
+  }
+
+  if (selectedReceiveMethod === "Наличные" && !selectedReceiveCity) {
+    const el = document.getElementById("receiveCityInput");
+    markInvalid(el);
+    hasError = true;
+  }
+
+  if (to === "USDT" && !selectedNetwork) {
+    const netBlock = document.getElementById("networkButtons");
+    markInvalid(netBlock);
+    hasError = true;
+  }
+
+  if (hasError) {
+    focusFirstInvalid();
+    return;
+  }
+
+  const order = {
+    id: Date.now(),
+    from,
+    to,
+    amount,
+    mode,
+    sendRubMethod: selectedSendRubMethod,
+    sendRubTransferType: selectedSendRubTransferType,
+    sendCity: selectedSendCity,
+    receiveMethod: selectedReceiveMethod,
+    receiveCity: selectedReceiveCity,
+    receiveDetails: selectedReceiveDetails,
+    network: selectedNetwork,
+    resultText: resultEl.innerText,
+    subResultText: subResultEl.innerText
+  };
+
+  saveOrder(order);
+
+  const summary = encodeURIComponent(getSummaryText(order));
+
+  successScreen.style.display = "block";
+  appScreen.style.display = "none";
+
+  setTimeout(() => {
+    window.location.href = `${MANAGER_LINK}?text=${summary}`;
+  }, 500);
+}
+
+function resetForm() {
+  appScreen.style.display = "block";
+  successScreen.style.display = "none";
+  amountEl.value = "";
+  fromEl.value = "RUB";
+  renderToOptions();
+  toEl.value = "USDT";
+  mode = "give";
+  giveBtn.classList.add("active");
+  getBtn.classList.remove("active");
+  selectedReceiveMethod = "";
+  selectedSendRubMethod = "";
+  selectedSendRubTransferType = "";
+  selectedSendCity = "";
+  selectedReceiveCity = "";
+  selectedReceiveDetails = "";
+  selectedNetwork = "";
+  clearErrors();
+  renderSendRUBBlock();
+  renderReceiveBlock();
+  calc();
+}
+
+function openManagerChat() {
+  window.location.href = MANAGER_LINK;
+}
+
+amountEl.oninput = calc;
+fromEl.onchange = () => { renderToOptions(); renderSendRUBBlock(); renderReceiveBlock(); calc(); };
+toEl.onchange = () => { renderSendRUBBlock(); renderReceiveBlock(); calc(); };
+
+renderSendRUBBlock();
+renderReceiveBlock();
+renderHistory();
+calc();
+loadRates();
+setInterval(loadRates, 60 * 60 * 1000);
+</script>
+</body>
+</html>
