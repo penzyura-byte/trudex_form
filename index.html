@@ -110,7 +110,6 @@ select, input {
   margin-bottom: 8px;
 }
 .success-btn.secondary { background: #145c55; color: white; }
-
 .invalid {
   outline: 2px solid #ff4d4f !important;
   outline-offset: 2px;
@@ -301,13 +300,12 @@ function setMode(m) {
   calc();
 }
 
-function getPairFactor(from, to, mode) {
-  // Все пары: -5%
-  // RUB <-> USDT: наоборот +2.5%
-  if ((from === "RUB" && to === "USDT") || (from === "USDT" && to === "RUB")) {
-    return 1.025;
-  }
-  return 0.95;
+function getPairFactor(from, to) {
+  if (from === "RUB" && to === "USDT") return 1.025;
+  if (from === "USDT" && to === "RUB") return 1.025;
+  if (from === "RUB" && to === "THB") return 0.88;
+  if (from === "THB" && to === "RUB") return 0.88;
+  return 0.96;
 }
 
 function renderToOptions() {
@@ -494,7 +492,7 @@ function calc() {
   const to = toEl.value;
   const amount = Number(amountEl.value || 0);
 
-  const pairFactor = lockedRate || getPairFactor(from, to, mode);
+  const pairFactor = lockedRate || getPairFactor(from, to);
 
   if (mode === "give") {
     const base = amount * prices[from];
@@ -647,7 +645,7 @@ function submitOrder() {
   }
 
   if (!lockedRate) {
-    lockedRate = getPairFactor(from, to, mode);
+    lockedRate = getPairFactor(from, to);
   }
 
   const order = {
