@@ -23,7 +23,23 @@ body {
 .title { font-size: 20px; margin-bottom: 15px; font-weight: bold; }
 .label { font-size: 13px; color: #a7d4cf; margin-bottom: 6px; }
 .card { background: #0b3d3a; padding: 14px; border-radius: 14px; margin-bottom: 12px; }
-.row { display: flex; gap: 8px; }
+.pair-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+.pair-box {
+  flex: 1;
+}
+.pair-arrow {
+  flex: 0 0 auto;
+  font-size: 20px;
+  line-height: 1;
+  color: #9fded5;
+  font-weight: 700;
+  transform: translateY(-1px);
+}
 select, input {
   width: 100%;
   padding: 10px;
@@ -32,6 +48,11 @@ select, input {
   background: #145c55;
   color: white;
   font-size: 16px;
+}
+select {
+  text-align: center;
+  text-align-last: center;
+  font-weight: 600;
 }
 .fast, .option-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
 .fast button, .option-buttons button {
@@ -128,9 +149,10 @@ select, input {
   </div>
 
   <div class="label">Отдаю / Получаю</div>
-  <div class="card row">
-    <select id="from"></select>
-    <select id="to"></select>
+  <div class="card pair-row">
+    <div class="pair-box"><select id="from"></select></div>
+    <div class="pair-arrow">→</div>
+    <div class="pair-box"><select id="to"></select></div>
   </div>
 
   <div id="sendRUBBlock" class="card" style="display:none;">
