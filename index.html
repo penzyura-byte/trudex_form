@@ -999,7 +999,6 @@ function getSummaryText(order) {
     "",
     `${order.from} → ${order.to}`,
     order.mode === "get" ? `Получаю: ${order.amount} ${order.to}` : `Отдаю: ${order.amount} ${order.from}`,
-    order.resultText || "",
     "Отправка:",
     `${order.sendRubMethod || "-"} ${order.sendCity || ""}`.trim(),
     "Получение:",
