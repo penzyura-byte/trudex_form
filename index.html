@@ -550,25 +550,22 @@ select:focus, input:focus {
           <div class="card result-card">
             <div id="result" class="result">—</div>
             <div id="subResult" class="sub-result"></div>
-            <div class="notice">
-              *Это предварительный расчёт. Финальную сумму подтвердит менеджер.
-            </div>
           </div>
 
-          <button type="button" class="submit-btn" onclick="submitOrder()">Отправить заявку в чат</button>
-          <div class="submit-caption">
+          <div class="submit-caption" style="margin-top: 0; margin-bottom: 10px;">
             При нажатии вы перейдёте в чат с менеджером, куда нужно будет отправить заявку
           </div>
+          <button type="button" class="submit-btn" onclick="submitOrder()">Отправить заявку в чат</button>
         </div>
 
         <div class="right-col">
           <div class="card soft">
             <div class="label">Преимущества</div>
             <div class="option-note" style="margin-top:0">
-              Быстрый расчёт, удобная форма и понятная заявка без лишних шагов.
+              Удобная форма и понятная заявка без лишних шагов.
             </div>
             <div class="option-note">
-              Курс автоматически подстраивается под направление обмена и сумму заявки.
+              Сумма и валюта остаются в том виде, как их ввёл клиент.
             </div>
             <div class="option-note">
               После отправки вы сразу переходите в чат менеджера.
@@ -579,7 +576,7 @@ select:focus, input:focus {
             <div class="label">Что отправит заявка</div>
             <div class="option-note" style="margin-top:0">
               Направление обмена<br>
-              Сумма и расчёт<br>
+              Сумма<br>
               Способ отправки и получения<br>
               Реквизиты / адрес / сеть, если указаны
             </div>
@@ -914,21 +911,17 @@ function renderReceiveBlock() {
 function calc() {
   const from = fromEl.value;
   const to = toEl.value;
-  const amount = Number(amountEl.value || 0);
-
-  const pairFactor = lockedRate || getPairFactor(from, to);
+  const rawAmount = (amountEl.value || "").trim();
+  const amount = rawAmount ? Number(rawAmount) : 0;
+  const amountText = rawAmount && Number.isFinite(amount) ? formatNumber(amount) : rawAmount || "0";
 
   if (mode === "give") {
-    const base = amount * prices[from];
-    const result = (base / prices[to]) * pairFactor;
-    resultEl.innerText = `К получению: ~${formatNumber(result)} ${to}`;
-    subResultEl.innerText = `Вы отдаёте: ${formatNumber(amount)} ${from}`;
+    resultEl.innerText = `Вы отдаёте: ${amountText} ${from}`;
+    subResultEl.innerText = `Валюта получения: ${to}`;
     currencyTag.textContent = from;
   } else {
-    const base = amount * prices[to];
-    const result = (base / prices[from]) * pairFactor;
-    resultEl.innerText = `К отправке: ~${formatNumber(result)} ${from}`;
-    subResultEl.innerText = `Вы получите: ${formatNumber(amount)} ${to}`;
+    resultEl.innerText = `Вы получаете: ${amountText} ${to}`;
+    subResultEl.innerText = `Валюта отдачи: ${from}`;
     currencyTag.textContent = to;
   }
 
